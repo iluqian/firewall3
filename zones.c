@@ -66,6 +66,7 @@ const struct fw3_option fw3_zone_opts[] = {
 	FW3_OPT("output",              target,   zone,     policy_output),
 
 	FW3_OPT("masq",                bool,     zone,     masq),
+	FW3_OPT("masq6",               bool,     zone,     masq6),
 	FW3_LIST("masq_src",           network,  zone,     masq_src),
 	FW3_LIST("masq_dest",          network,  zone,     masq_dest),
 
@@ -217,6 +218,12 @@ fw3_load_zones(struct fw3_state *state, struct uci_package *p)
 		if (zone->masq)
 		{
 			setbit(zone->flags[0], FW3_FLAG_SNAT);
+			zone->conntrack = true;
+		}
+
+		if (zone->masq6)
+		{
+			setbit(zone->flags[1], FW3_FLAG_SNAT);
 			zone->conntrack = true;
 		}
 
@@ -540,7 +547,8 @@ print_zone_rule(struct fw3_ipt_handle *handle, struct fw3_state *state,
 		break;
 
 	case FW3_TABLE_NAT:
-		if (zone->masq && handle->family == FW3_FAMILY_V4)
+		if ((zone->masq && handle->family == FW3_FAMILY_V4) ||
+			(zone->masq6 && handle->family == FW3_FAMILY_V6))
 		{
 			fw3_foreach(msrc, &zone->masq_src)
 			fw3_foreach(mdest, &zone->masq_dest)
